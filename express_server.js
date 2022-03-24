@@ -26,6 +26,19 @@ const userDatabase = { //LECTURE
   "jkirck@hotmail.com" : user1,
 };
 
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
+
 // function generateRandomString () {
 //   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";  
 //     let String = 5;  
@@ -73,10 +86,15 @@ app.post("/urls", (req, res) => {
   res.redirect(shortURL);         // Respond with 'Ok' (we will replace this)
 });
 
-app.post("/register", (req, res) => {
+app.get("/register", (req, res) => {
+  const {password, name, email} = req.body;
+ }
+});
+
+app.post("/register", (req, res) => { //use generateRandom
   const {password, name, email} = req.body;
   if (!email || !password || !name ){
-    return res.redirect("/register")
+    return res.redirect("/urls")
   }
   const newUser = {
   email,
