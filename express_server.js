@@ -59,7 +59,7 @@ const searchUserByEmail = (email) => {
 
 function generateRandomString() {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-  let String = 5;
+  let String = 5; 
   let randomString = "";
   for (let i = 0; i < String; i++) {
     num = Math.floor(Math.random() * letters.length);
