@@ -10,8 +10,6 @@ const cookieSession = require("cookie-session");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({ name:"session", keys:["hello", "world"]}));
 
-const userDatabase = {};
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
@@ -85,22 +83,25 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const userId = req.session["user_id"];
+  const userId = req.session.userId
   console.log(userId); 
-  const user = users[userId];
-  console.log(user);
 
-  if (!user) {
+  if (!users[userId]) {
     res.status(400).send("please login first");
     return;
+  }  //error
+  for (let user in users){
+    if (users[user].id=== userId) {
+      const urls = urlsForUser(userId);
+      const templateVars = { urls, user:users[user] };
+      res.render("urls_index", templateVars);
+    }
   }
-  const urls = urlsForUser(userId);
-
-  const templateVars = { urls, user };
-  res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
+  const templateVars = { 
+    urls: urlDatabase, user: users[req.session.user_id]};
   res.render("urls_new", templateVars);
 });
 
@@ -117,21 +118,24 @@ app.get("/urls/:shortURL", (req, res) => {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
   };
-  res.render("urls_index", templateVars); //change all to urls_index
+  res.render("urls_show", templateVars); //change all to urls_index
 });
 
 app.get("/register", (req, res) => {
-  res.render("register");
+  const templateVars = {user: users[req.session.user_id]};
+  res.render("register", templateVars);
 });
 
 app.get("/login", (req, res) => {
-  res.render("login");
-
+  const templateVars = {user: users[req.session.user_id]};
+  res.render("login", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  res.redirect(shortURL);
+  const shortUrl = generateRandomString(6)
+  urlDatabase[shortUrl]=req.body.longURL
+  res.redirect(`/urls/${shortUrl}`);
 });
 
 app.post("/register", (req, res) => {
@@ -139,35 +143,39 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
 
   if (!email || !password) {
-    return res.status(400).send("email and password cannot be blank");
+    return res.status(400).send("feilds cannot be blank");
   }
   const existingUser = searchUserByEmail(email);
   if (existingUser) {
-    return res.status(400).send("the email address is alread in use");
+    return res.status(400).send("the email address is already taken");
   }
   const userId = generateRandomString(6);
   const salt = bcrypt.genSaltSync(10); //syncronous 
   const hash = bcrypt.hashSync(password, salt);
-  const user = { email, hash, userId };
+  const user = {  id:userId,email, password:hash };
   users[userId] = user;
-  
-  res.redirect("/login")
-  console.log(user);
+  req.session.userId= userId
+  console.log(userId)
+  res.redirect("/urls")
+  // console.log(user);
+  // console.log("test", userId)
 });
 
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+
   if (!email || !password) {
     return res.status(400).send("feilds cannot be blank");
   }
   const user = searchUserByEmail(email);
-  // console.log(user)
+  // console.log(userId)
   if (!user) {
     return res.status(400).send("no user with that email found");
   }
-  if (bcrypt.compareSync(password, user.hash)) {
-    req.session["user_id"] = user.userId;
+  if (bcrypt.compareSync(password, user.password)) {
+    
+    req.session.userId = user.id;
     res.redirect("/urls");
   } else {
     return res.status(400).send("password does not match");
@@ -176,5 +184,5 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req, res) => {
   req.session = null;
-  res.redirect("/");
+  res.redirect("/login");
 });
