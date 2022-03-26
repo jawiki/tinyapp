@@ -2,32 +2,43 @@ const express = require("express");
 const app = express(); 
 const PORT = 3000; 
 const cookieParser = require("cookie-parser")
-app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const res = require("express/lib/response");
 const cookieSession = require("cookie-session");
+app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({ name:"session", keys:["hello", "world"]}));
+const {generateRandomString, searchUserByEmail}  = require('./helpers');
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+//////////////////////////DATA///////////////////////////////////
+
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  "b2xVn2": {
+    longUrl: "http://www.lighthouselabs.ca",
+    userId: "grrIQ"
+  },
+  "9sm5xK": {
+    longUrl: "http://www.google.com",
+    userId: "grrIQ"
+  },
 };
 
 const urlsForUser = function (id) {
+  console.log("id", id)
+  console.log("urldatabase", urlDatabase)
   const results = {};
   const keys = Object.keys(urlDatabase);
 
   for (const shortUrl of keys) {
     const url = urlDatabase[shortUrl];
     if (url.userId === id) {
-      results[id] = url;
-    }
+      results[shortUrl] = url;
+   }
   }
   return results;
 };
@@ -45,38 +56,7 @@ const users = {
   },
 };
 
-const searchUserByEmail = (email) => {
-  for (const userId in users) {
-    const user = users[userId];
-    if (user.email === email) {
-      return user;
-    }
-  }
-  return null;
-};
-
-function generateRandomString() {
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-  let String = 5; 
-  let randomString = "";
-  for (let i = 0; i < String; i++) {
-    num = Math.floor(Math.random() * letters.length);
-    randomString += letters.substring(num, num + 1);
-  }
-  return randomString
-}
-
-// bcrypt.genSalt(10, (err, salt, password) => {
-//   bcrypt.hash(password, salt, (err, hash) => {
-//     const id = math.floor(math.random() * 1000) + 1;
-//     newUser[id] = {
-//       email,
-//       name,
-//       password
-//     }
-//   res.redirect("/")
-//   })
-// });
+//////////////////////////APP.GET///////////////////////////////////
 
 app.get("/", (req, res) => {
   res.redirect("/urls");
@@ -93,6 +73,7 @@ app.get("/urls", (req, res) => {
   for (let user in users){
     if (users[user].id=== userId) {
       const urls = urlsForUser(userId);
+      console.log('urls',urls);
       const templateVars = { urls, user:users[user] };
       res.render("urls_index", templateVars);
     }
@@ -116,7 +97,7 @@ app.get("/hello", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longUrl,
   };
   res.render("urls_show", templateVars); //change all to urls_index
 });
@@ -131,10 +112,15 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
+//////////////////////////APP.POST///////////////////////////////////
+
 app.post("/urls", (req, res) => {
   console.log(req.body);
   const shortUrl = generateRandomString(6)
-  urlDatabase[shortUrl]=req.body.longURL
+  urlDatabase[shortUrl]={
+    longUrl:req.body.longURL,
+    userId:req.session.userId
+  }
   res.redirect(`/urls/${shortUrl}`);
 });
 
@@ -145,7 +131,7 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("feilds cannot be blank");
   }
-  const existingUser = searchUserByEmail(email);
+  const existingUser = searchUserByEmail(users, email);
   if (existingUser) {
     return res.status(400).send("the email address is already taken");
   }
@@ -168,7 +154,7 @@ app.post("/login", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("feilds cannot be blank");
   }
-  const user = searchUserByEmail(email);
+  const user = searchUserByEmail(users, email);
   // console.log(userId)
   if (!user) {
     return res.status(400).send("no user with that email found");

@@ -26,14 +26,14 @@
         <% for(let url in urls) { %>
           <tr>
             <td><%= url %></td>
-            <td><%= urls[url] %></td>
+            <td><%= urls[url].longUrl %></td>
             <form method="POST" action="/urls/<%= url%>/delete" >
               <td> <input type="submit" value="delete"> </td>
                <!-- <button type="submit">delete</button> -->
               </form>
-              <form method="POST" action= "/delete" >
-                <button> <input type="submit" value="edit"> </button>
-                </form>
+              <td><form method="GET" action= "/urls/<%= url%>" >
+                 <input type="submit" value="edit">
+                </form></td>
           </tr>
         <% } %>
       </tbody>
@@ -45,7 +45,3 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 </body>
 </html>
-
-<!-- <a>
-  <button>edit</button>
-</a> -->
