@@ -6,10 +6,11 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const res = require("express/lib/response");
 const cookieSession = require("cookie-session");
+const {generateRandomString, searchUserByEmail}  = require('./helpers');
+const req = require("express/lib/request");
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({ name:"session", keys:["hello", "world"]}));
-const {generateRandomString, searchUserByEmail}  = require('./helpers');
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -90,16 +91,12 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longUrl,
   };
-  res.render("urls_show", templateVars); //change all to urls_index
+  res.render("urls_show", templateVars);
 });
 
 app.get("/register", (req, res) => {
@@ -143,8 +140,6 @@ app.post("/register", (req, res) => {
   req.session.userId= userId
   console.log(userId)
   res.redirect("/urls")
-  // console.log(user);
-  // console.log("test", userId)
 });
 
 app.post("/login", (req, res) => {
@@ -155,7 +150,6 @@ app.post("/login", (req, res) => {
     return res.status(400).send("feilds cannot be blank");
   }
   const user = searchUserByEmail(users, email);
-  // console.log(userId)
   if (!user) {
     return res.status(400).send("no user with that email found");
   }
@@ -171,4 +165,16 @@ app.post("/login", (req, res) => {
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/login");
+});
+
+app.post("/urls/:id", (req, res) => {
+  const longURL = req.body.longURL
+  const shortUrl = req.params.id
+  urlDatabase[shortUrl].longUrl = longURL ///
+  res.redirect("/urls")
+});
+
+app.post("/urls/:shortURL/delete", (req, res) =>  {
+  delete urlDatabase[req.params.shortURL]
+  res.redirect("/urls")
 });
